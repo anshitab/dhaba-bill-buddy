@@ -6,6 +6,7 @@ import ItemEntryForm from './ItemEntryForm';
 import BillSummary from './BillSummary';
 import EstimateModal from './EstimateModal';
 import { toast } from "@/components/ui/sonner";
+import { Toaster } from '@/components/ui/sonner';
 
 const BillingSystem = () => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -46,18 +47,25 @@ const BillingSystem = () => {
   };
 
   return (
-    <div className="min-h-screen bg-restaurant-light-green/30 font-poppins">
+    <div className="min-h-screen bg-gradient-to-br from-restaurant-light-green/40 to-restaurant-cream/30 font-poppins">
+      <Toaster position="top-center" />
       <div className="container mx-auto py-6 px-4">
         <Header />
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7">
-            <h2 className="text-xl font-semibold mb-4 text-restaurant-green">Add Items to Bill</h2>
+          <div className="lg:col-span-7 animate-fade-in">
+            <h2 className="text-xl font-semibold mb-4 text-restaurant-green flex items-center">
+              <span className="bg-restaurant-green text-white h-6 w-6 inline-flex items-center justify-center rounded-full text-sm mr-2">1</span>
+              Add Items to Bill
+            </h2>
             <ItemEntryForm onAddItem={handleAddItem} />
           </div>
           
-          <div className="lg:col-span-5">
-            <h2 className="text-xl font-semibold mb-4 text-restaurant-green">Order Summary</h2>
+          <div className="lg:col-span-5 animate-fade-in" style={{ animationDelay: "150ms" }}>
+            <h2 className="text-xl font-semibold mb-4 text-restaurant-green flex items-center">
+              <span className="bg-restaurant-green text-white h-6 w-6 inline-flex items-center justify-center rounded-full text-sm mr-2">2</span>
+              Order Summary
+            </h2>
             <BillSummary 
               items={orderItems} 
               onRemoveItem={handleRemoveItem}
