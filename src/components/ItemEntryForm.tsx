@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ interface ItemEntryFormProps {
   onAddItem: (item: OrderItem) => void;
 }
 
-const ItemEntryForm = ({ onAddItem }: ItemEntryFormProps) => {
+const ItemEntryForm = forwardRef<{ resetForm: () => void }, ItemEntryFormProps>(({ onAddItem }, ref) => {
   const [itemId, setItemId] = useState("");
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState<number>(1);
@@ -21,6 +21,18 @@ const ItemEntryForm = ({ onAddItem }: ItemEntryFormProps) => {
   const [customPrice, setCustomPrice] = useState<number | "">("");
   const [itemTotal, setItemTotal] = useState<number>(0);
   const [isAnimatingTotal, setIsAnimatingTotal] = useState(false);
+
+  // Expose resetForm function to parent via ref
+  useImperativeHandle(ref, () => ({
+    resetForm: () => {
+      setItemId("");
+      setItemName("");
+      setQuantity(1);
+      setSelectedItem(null);
+      setCustomPrice("");
+      setItemTotal(0);
+    }
+  }));
 
   // Find item when itemId changes
   useEffect(() => {
@@ -166,6 +178,8 @@ const ItemEntryForm = ({ onAddItem }: ItemEntryFormProps) => {
       </form>
     </Card>
   );
-};
+});
+
+ItemEntryForm.displayName = 'ItemEntryForm';
 
 export default ItemEntryForm;
