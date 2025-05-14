@@ -15,9 +15,7 @@ interface BillSummaryProps {
 }
 
 const BillSummary = ({ items, onRemoveItem, onGenerateEstimate, onPrintEstimate }: BillSummaryProps) => {
-  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-  const tax = subtotal * 0.05; // 5% tax
-  const grandTotal = subtotal + tax;
+  const grandTotal = items.reduce((sum, item) => sum + item.total, 0);
 
   return (
     <Card className="bg-white shadow-md hover:shadow-xl transition-all duration-300 h-full flex flex-col border-restaurant-green/20 overflow-hidden">
@@ -79,17 +77,8 @@ const BillSummary = ({ items, onRemoveItem, onGenerateEstimate, onPrintEstimate 
       
       <CardFooter className="flex flex-col p-4 border-t bg-restaurant-cream/70">
         <div className="w-full space-y-2 mb-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground font-poppins">Subtotal:</span>
-            <span className="font-medium font-poppins">₹{subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground font-poppins">Tax (5%):</span>
-            <span className="font-medium font-poppins">₹{tax.toFixed(2)}</span>
-          </div>
-          <Separator className="my-2" />
           <div className="flex justify-between">
-            <span className="font-semibold text-lg font-poppins">Grand Total:</span>
+            <span className="font-semibold text-lg font-poppins">Total Amount:</span>
             <span className="font-bold text-lg text-restaurant-green font-poppins transition-all duration-300 hover:scale-110">₹{grandTotal.toFixed(2)}</span>
           </div>
         </div>

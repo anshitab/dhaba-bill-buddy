@@ -15,8 +15,6 @@ export interface OrderItem {
 
 export interface Bill {
   items: OrderItem[];
-  subtotal: number;
-  tax: number;
-  grandTotal: number;
+  total: number;
   date: Date;
 }

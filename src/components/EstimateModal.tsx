@@ -22,9 +22,7 @@ const EstimateModal = forwardRef<HTMLDivElement, EstimateModalProps>(
   ({ isOpen, onClose, items }, ref) => {
     const estimateRef = useRef<HTMLDivElement>(null);
 
-    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-    const tax = subtotal * 0.05; // 5% tax
-    const grandTotal = subtotal + tax;
+    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
     const currentDate = new Date().toLocaleDateString('en-IN');
     const currentTime = new Date().toLocaleTimeString('en-IN');
 
@@ -84,9 +82,7 @@ Date: ${currentDate} Time: ${currentTime}
 ITEMS:
 ${items.map(item => `${item.name} - ${item.quantity} x ₹${item.price} = ₹${item.total}`).join('\n')}
 
-Subtotal: ₹${subtotal.toFixed(2)}
-Tax (5%): ₹${tax.toFixed(2)}
-Grand Total: ₹${grandTotal.toFixed(2)}
+Total Amount: ₹${totalAmount.toFixed(2)}
 
 Thank you for dining with us!
         `)
@@ -139,17 +135,9 @@ Thank you for dining with us!
             <Separator className="my-2" />
             
             <div className="space-y-2 text-right font-poppins">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal:</span>
-                <span>₹{subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Tax (5%):</span>
-                <span>₹{tax.toFixed(2)}</span>
-              </div>
               <div className="flex justify-between font-bold text-lg">
-                <span>Grand Total:</span>
-                <span>₹{grandTotal.toFixed(2)}</span>
+                <span>Total Amount:</span>
+                <span>₹{totalAmount.toFixed(2)}</span>
               </div>
             </div>
           </div>
