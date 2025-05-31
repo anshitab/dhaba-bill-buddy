@@ -1,4 +1,3 @@
-
 import React, { forwardRef, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import {
@@ -39,16 +38,68 @@ const EstimateModal = forwardRef<HTMLDivElement, EstimateModalProps>(
         <head>
           <title>Estimate - AARKAY VAISHNO DHABA</title>
           <style>
-            body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; }
-            .estimate { max-width: 800px; margin: 0 auto; }
-            h1, h2 { text-align: center; margin-bottom: 5px; }
-            .subtitle { text-align: center; color: #666; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-            th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-            th { background-color: #f8f8f8; }
-            .total-section { margin-top: 20px; text-align: right; }
-            .grand-total { font-size: 18px; font-weight: bold; }
-            .footer { margin-top: 30px; text-align: center; font-size: 14px; color: #666; }
+            @page {
+              size: 80mm 297mm;
+              margin: 0;
+            }
+            body { 
+              font-family: 'Courier New', monospace;
+              margin: 0;
+              padding: 5mm;
+              width: 70mm;
+              font-size: 12px;
+            }
+            .estimate { 
+              width: 100%;
+              margin: 0 auto;
+            }
+            h1, h2 { 
+              text-align: center;
+              margin: 5px 0;
+              font-size: 14px;
+              font-weight: bold;
+            }
+            .subtitle { 
+              text-align: center;
+              margin: 5px 0;
+              font-size: 11px;
+            }
+            table { 
+              width: 100%;
+              border-collapse: collapse;
+              margin: 5px 0;
+            }
+            th, td { 
+              padding: 2px 0;
+              text-align: left;
+              font-size: 11px;
+            }
+            th { 
+              border-bottom: 1px dashed #000;
+            }
+            .total-section { 
+              margin-top: 10px;
+              text-align: right;
+              border-top: 1px dashed #000;
+              padding-top: 5px;
+            }
+            .grand-total { 
+              font-size: 12px;
+              font-weight: bold;
+            }
+            .footer { 
+              margin-top: 15px;
+              text-align: center;
+              font-size: 11px;
+              border-top: 1px dashed #000;
+              padding-top: 5px;
+            }
+            @media print {
+              body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
           </style>
         </head>
         <body>
@@ -56,6 +107,7 @@ const EstimateModal = forwardRef<HTMLDivElement, EstimateModalProps>(
           <div class="footer">
             <p>Thank you for dining with us!</p>
             <p>AARKAY VAISHNO DHABA</p>
+            <p>JALANDHAR, PUNJAB</p>
           </div>
         </body>
         </html>
@@ -70,13 +122,12 @@ const EstimateModal = forwardRef<HTMLDivElement, EstimateModalProps>(
       const content = estimateRef.current;
       if (!content) return;
       
-      // Create a hidden anchor element and trigger download
       const element = document.createElement('a');
       element.setAttribute('href', 
         'data:text/plain;charset=utf-8,' + 
         encodeURIComponent(`
 AARKAY VAISHNO DHABA
-ESTIMATE
+JALANDHAR, PUNJAB
 Date: ${currentDate} Time: ${currentTime}
 
 ITEMS:
@@ -134,7 +185,7 @@ Thank you for dining with us!
             
             <Separator className="my-2" />
             
-            <div className="space-y-2 text-right font-poppins">
+            <div className="mt-4">
               <div className="flex justify-between font-bold text-lg">
                 <span>Total Amount:</span>
                 <span>₹{totalAmount.toFixed(2)}</span>

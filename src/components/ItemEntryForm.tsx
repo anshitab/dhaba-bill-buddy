@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,14 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner"; 
 import { MenuItem, OrderItem } from '@/types/billing';
-import { menuItems } from '@/data/menu-items';
 import { Plus, Sparkles } from "lucide-react";
 
 interface ItemEntryFormProps {
   onAddItem: (item: OrderItem) => void;
+  menuItems: MenuItem[];
 }
 
-const ItemEntryForm = forwardRef<{ resetForm: () => void }, ItemEntryFormProps>(({ onAddItem }, ref) => {
+const ItemEntryForm = forwardRef<{ resetForm: () => void }, ItemEntryFormProps>(({ onAddItem, menuItems }, ref) => {
   const [itemId, setItemId] = useState("");
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState<number>(1);
@@ -42,7 +41,7 @@ const ItemEntryForm = forwardRef<{ resetForm: () => void }, ItemEntryFormProps>(
       setItemName(foundItem.name);
       setCustomPrice(foundItem.price);
     }
-  }, [itemId]);
+  }, [itemId, menuItems]);
 
   // Calculate item total and animate
   useEffect(() => {

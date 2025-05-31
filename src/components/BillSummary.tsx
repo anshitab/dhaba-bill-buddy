@@ -1,21 +1,21 @@
-
 import React from 'react';
 import { OrderItem } from '@/types/billing';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { X, Download, Printer } from "lucide-react";
+import { X, Download, Printer, Receipt } from "lucide-react";
 
 interface BillSummaryProps {
   items: OrderItem[];
   onRemoveItem: (id: string) => void;
   onGenerateEstimate: () => void;
   onPrintEstimate: () => void;
+  isSaving?: boolean;
 }
 
-const BillSummary = ({ items, onRemoveItem, onGenerateEstimate, onPrintEstimate }: BillSummaryProps) => {
-  const grandTotal = items.reduce((sum, item) => sum + item.total, 0);
+const BillSummary = ({ items, onRemoveItem, onGenerateEstimate, onPrintEstimate, isSaving = false }: BillSummaryProps) => {
+  const total = items.reduce((sum, item) => sum + item.total, 0);
 
   return (
     <Card className="bg-white shadow-md hover:shadow-xl transition-all duration-300 h-full flex flex-col border-restaurant-green/20 overflow-hidden">
@@ -28,7 +28,7 @@ const BillSummary = ({ items, onRemoveItem, onGenerateEstimate, onPrintEstimate 
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="flex-grow p-0 overflow-auto">
+      <CardContent className="flex-1 overflow-auto p-0">
         {items.length === 0 ? (
           <div className="p-6 text-center text-muted-foreground flex flex-col items-center space-y-4 h-40 justify-center">
             <div className="p-4 rounded-full bg-restaurant-light-green/50">
@@ -77,19 +77,29 @@ const BillSummary = ({ items, onRemoveItem, onGenerateEstimate, onPrintEstimate 
       
       <CardFooter className="flex flex-col p-4 border-t bg-restaurant-cream/70">
         <div className="w-full space-y-2 mb-4">
-          <div className="flex justify-between">
-            <span className="font-semibold text-lg font-poppins">Total Amount:</span>
-            <span className="font-bold text-lg text-restaurant-green font-poppins transition-all duration-300 hover:scale-110">₹{grandTotal.toFixed(2)}</span>
+          <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+            <span>Total</span>
+            <span>₹{total.toFixed(2)}</span>
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2 w-full">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button 
             className={`flex-1 bg-restaurant-orange hover:bg-restaurant-orange/90 text-black font-medium font-poppins transition-all duration-300 hover:scale-[1.02] ${items.length > 0 ? "hover:shadow-lg" : "opacity-50"}`}
             onClick={onGenerateEstimate}
-            disabled={items.length === 0}
+            disabled={items.length === 0 || isSaving}
           >
-            Generate Estimate
+            {isSaving ? (
+              <span className="flex items-center gap-2">
+                <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Saving...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Receipt className="h-5 w-5" />
+                Generate Estimate
+              </span>
+            )}
           </Button>
           
           <Button 

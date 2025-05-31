@@ -1,6 +1,5 @@
-
 import React, { useState, useRef } from 'react';
-import { OrderItem } from '@/types/billing';
+import { OrderItem, MenuItem } from '@/types/billing';
 import Header from './Header';
 import ItemEntryForm from './ItemEntryForm';
 import BillSummary from './BillSummary';
@@ -8,11 +7,17 @@ import EstimateModal from './EstimateModal';
 import { toast } from "@/components/ui/sonner";
 import { Toaster } from '@/components/ui/sonner';
 import { Check, Sparkles } from "lucide-react";
+import api from '@/services/api';
 
-const BillingSystem = () => {
+interface BillingSystemProps {
+  menuItems: MenuItem[];
+}
+
+const BillingSystem: React.FC<BillingSystemProps> = ({ menuItems }) => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [isEstimateModalOpen, setIsEstimateModalOpen] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const itemEntryFormRef = useRef<{ resetForm: () => void } | null>(null);
 
   const handleAddItem = (newItem: OrderItem) => {
@@ -41,26 +46,74 @@ const BillingSystem = () => {
     toast.success("Item removed from bill");
   };
 
-  const handleGenerateEstimate = () => {
-    setIsEstimateModalOpen(true);
-    
-    // Show success animation
-    setShowSuccessAnimation(true);
-    setTimeout(() => setShowSuccessAnimation(false), 2000);
-    
-    // Show toast notification
-    toast.success("Estimate generated successfully!", {
-      description: "Ready for the next customer",
-      icon: <Check className="h-4 w-4" />
-    });
-    
-    // Reset the form after a slight delay to make it feel smooth
-    setTimeout(() => {
-      if (itemEntryFormRef.current) {
-        itemEntryFormRef.current.resetForm();
+  const saveTransaction = async () => {
+    try {
+      setIsSaving(true);
+      
+      // Calculate total amount
+      const totalAmount = orderItems.reduce((sum, item) => sum + item.total, 0);
+      
+      // Prepare transaction data
+      const transactionData = {
+        items: orderItems.map(item => ({
+          item_id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total
+        })),
+        total_amount: totalAmount,
+        payment_method: "Cash", // Default payment method
+        bill_number: `BILL${Date.now()}`, // Generate a unique bill number
+        status: "completed",
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('Saving transaction:', transactionData);
+      
+      // Save to MongoDB using our API service
+      const response = await api.post('/transactions', transactionData);
+      
+      if (response.data && response.data.success) {
+        console.log("Transaction saved successfully:", response.data);
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to save transaction");
       }
-      setOrderItems([]);
-    }, 300);
+    } catch (error) {
+      console.error("Error saving transaction:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save transaction");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleGenerateEstimate = async () => {
+    // Save transaction first
+    const saved = await saveTransaction();
+    
+    if (saved) {
+      setIsEstimateModalOpen(true);
+      
+      // Show success animation
+      setShowSuccessAnimation(true);
+      setTimeout(() => setShowSuccessAnimation(false), 2000);
+      
+      // Show toast notification
+      toast.success("Transaction saved and estimate generated!", {
+        description: "Ready for the next customer",
+        icon: <Check className="h-4 w-4" />
+      });
+      
+      // Reset the form after a slight delay to make it feel smooth
+      setTimeout(() => {
+        if (itemEntryFormRef.current) {
+          itemEntryFormRef.current.resetForm();
+        }
+        setOrderItems([]);
+      }, 300);
+    }
   };
 
   const handlePrintEstimate = () => {
@@ -90,7 +143,7 @@ const BillingSystem = () => {
               <span className="bg-restaurant-green text-white h-6 w-6 inline-flex items-center justify-center rounded-full text-sm mr-2">1</span>
               Add Items to Bill
             </h2>
-            <ItemEntryForm onAddItem={handleAddItem} ref={itemEntryFormRef} />
+            <ItemEntryForm onAddItem={handleAddItem} ref={itemEntryFormRef} menuItems={menuItems} />
           </div>
           
           <div className="lg:col-span-5 animate-fade-in" style={{ animationDelay: "150ms" }}>
@@ -103,6 +156,7 @@ const BillingSystem = () => {
               onRemoveItem={handleRemoveItem}
               onGenerateEstimate={handleGenerateEstimate}
               onPrintEstimate={handlePrintEstimate}
+              isSaving={isSaving}
             />
           </div>
         </div>

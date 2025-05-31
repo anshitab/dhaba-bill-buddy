@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -16,253 +15,206 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Download, Printer } from "lucide-react";
-import AdminLayout from "@/components/AdminLayout";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 
-// Mock transaction data for demonstration
-const mockTransactions = [
-  { 
-    id: "T001", 
-    date: new Date(), 
-    time: "10:15 AM", 
-    items: 4, 
-    total: 560, 
-    paymentMethod: "Cash",
-    shift: "morning" 
-  },
-  { 
-    id: "T002", 
-    date: new Date(), 
-    time: "11:30 AM", 
-    items: 2, 
-    total: 240, 
-    paymentMethod: "Card",
-    shift: "morning" 
-  },
-  { 
-    id: "T003", 
-    date: new Date(), 
-    time: "12:45 PM", 
-    items: 6, 
-    total: 780, 
-    paymentMethod: "Cash",
-    shift: "afternoon" 
-  },
-  { 
-    id: "T004", 
-    date: new Date(), 
-    time: "2:20 PM", 
-    items: 3, 
-    total: 420, 
-    paymentMethod: "Cash",
-    shift: "afternoon" 
-  },
-  { 
-    id: "T005", 
-    date: new Date(), 
-    time: "4:05 PM", 
-    items: 5, 
-    total: 650, 
-    paymentMethod: "Card",
-    shift: "afternoon" 
-  },
-  { 
-    id: "T006", 
-    date: new Date(), 
-    time: "7:30 PM", 
-    items: 8, 
-    total: 1150, 
-    paymentMethod: "Cash",
-    shift: "evening" 
-  },
-  { 
-    id: "T007", 
-    date: new Date(), 
-    time: "8:45 PM", 
-    items: 6, 
-    total: 920, 
-    paymentMethod: "Card",
-    shift: "evening" 
-  },
-];
+interface Transaction {
+  _id: string;
+  timestamp: string;
+  items: Array<{
+    name: string;
+    price: number;
+    quantity: number;
+  }>;
+  total_amount: number;
+  payment_method: string;
+}
+
+// Safe date formatting function
+const formatDate = (dateString: string | undefined | null) => {
+  if (!dateString) return 'N/A';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return format(date, "MMM dd, yyyy HH:mm");
+  } catch (error) {
+    console.error('Date formatting error:', error);
+    return 'Invalid Date';
+  }
+};
 
 const AdminTransactions = () => {
-  const [shiftFilter, setShiftFilter] = useState<string>("all");
-  const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter transactions by shift
-  const filteredTransactions = shiftFilter === "all" 
-    ? mockTransactions 
-    : mockTransactions.filter(t => t.shift === shiftFilter);
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
-  // Calculate totals
-  const totalSales = filteredTransactions.reduce((sum, t) => sum + t.total, 0);
-  const totalTransactions = filteredTransactions.length;
-  
-  const handleSelectAll = () => {
-    if (selectedTransactions.length === filteredTransactions.length) {
-      setSelectedTransactions([]);
-    } else {
-      setSelectedTransactions(filteredTransactions.map(t => t.id));
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        "http://localhost:5000/transactions",
+        {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to fetch transactions");
+      }
+
+      const data = await response.json();
+      // Validate and transform the data
+      const validTransactions = data.map((txn: any) => ({
+        ...txn,
+        timestamp: txn.timestamp || new Date().toISOString(), // Fallback to current time if missing
+        total_amount: Number(txn.total_amount) || 0,
+        items: Array.isArray(txn.items) ? txn.items : []
+      }));
+      setTransactions(validTransactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      setError(error instanceof Error ? error.message : "Failed to fetch transactions");
+      toast.error("Failed to fetch transactions");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSelectTransaction = (id: string) => {
-    if (selectedTransactions.includes(id)) {
-      setSelectedTransactions(selectedTransactions.filter(t => t !== id));
-    } else {
-      setSelectedTransactions([...selectedTransactions, id]);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[calc(100vh-4rem)]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-restaurant-green"></div>
+      </div>
+    );
+  }
 
-  const handlePrint = () => {
-    setIsGeneratingReport(true);
-    
-    setTimeout(() => {
-      toast.success("Report prepared for printing!");
-      setIsGeneratingReport(false);
-      // In a real app, this would trigger the print dialog or PDF generation
-    }, 1000);
-  };
-
-  const handleDownload = () => {
-    setIsGeneratingReport(true);
-    
-    setTimeout(() => {
-      toast.success("Report downloaded successfully!");
-      setIsGeneratingReport(false);
-      // In a real app, this would generate and download a PDF
-    }, 1000);
-  };
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-[calc(100vh-4rem)]">
+        <div className="text-red-500">Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
-    <AdminLayout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center gap-2">
-          <Printer className="h-6 w-6 text-restaurant-green" />
-          <h1 className="text-2xl font-bold">Daily Transactions</h1>
-        </div>
-        
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="border-restaurant-green/10 shadow-md bg-restaurant-light-green/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-2xl">₹{totalSales.toLocaleString()}</CardTitle>
-              <CardDescription>Total Sales Today</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="border-restaurant-green/10 shadow-md bg-restaurant-cream/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-2xl">{totalTransactions}</CardTitle>
-              <CardDescription>Total Transactions</CardDescription>
-            </CardHeader>
-          </Card>
-          <Card className="border-restaurant-green/10 shadow-md bg-restaurant-orange/10">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-2xl">{format(new Date(), 'dd MMM yyyy')}</CardTitle>
-              <CardDescription>Current Date</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-        
-        <Card className="border-restaurant-green/10 shadow-md">
-          <CardHeader className="bg-restaurant-light-green/30 border-b flex flex-col sm:flex-row justify-between gap-4">
-            <CardTitle className="text-xl text-restaurant-green">Transaction List</CardTitle>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-normal text-muted-foreground whitespace-nowrap">Filter by Shift:</span>
-              <Select value={shiftFilter} onValueChange={setShiftFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select shift" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Shifts</SelectItem>
-                  <SelectItem value="morning">Morning (6AM-12PM)</SelectItem>
-                  <SelectItem value="afternoon">Afternoon (12-5PM)</SelectItem>
-                  <SelectItem value="evening">Evening (5PM-Close)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="rounded-md border-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50 hover:bg-muted/50">
-                    <TableHead className="w-12">
-                      <Checkbox 
-                        checked={selectedTransactions.length === filteredTransactions.length && filteredTransactions.length > 0} 
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead className="w-24">Bill #</TableHead>
-                    <TableHead className="w-32">Time</TableHead>
-                    <TableHead className="w-24">Items</TableHead>
-                    <TableHead className="w-32 text-right">Amount (₹)</TableHead>
-                    <TableHead>Payment</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center p-8 text-muted-foreground">
-                        No transactions found for the selected shift.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredTransactions.map((transaction) => (
-                      <TableRow key={transaction.id} className="hover:bg-muted/30">
-                        <TableCell>
-                          <Checkbox 
-                            checked={selectedTransactions.includes(transaction.id)} 
-                            onCheckedChange={() => handleSelectTransaction(transaction.id)}
-                          />
-                        </TableCell>
-                        <TableCell className="font-medium">{transaction.id}</TableCell>
-                        <TableCell>{transaction.time}</TableCell>
-                        <TableCell>{transaction.items}</TableCell>
-                        <TableCell className="text-right">₹{transaction.total.toFixed(2)}</TableCell>
-                        <TableCell>{transaction.paymentMethod}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <div className="flex flex-col sm:flex-row justify-end gap-4">
-          <Button 
-            className="bg-restaurant-cream text-restaurant-green border border-restaurant-green hover:bg-restaurant-green hover:text-white"
-            size="lg"
-            onClick={handlePrint}
-            disabled={selectedTransactions.length === 0 || isGeneratingReport}
-          >
-            <Printer className="mr-2 h-5 w-5" />
-            Print {selectedTransactions.length > 0 ? `(${selectedTransactions.length})` : ''}
-          </Button>
-          <Button 
-            className="bg-restaurant-green hover:bg-restaurant-green/90"
-            size="lg"
-            onClick={handleDownload}
-            disabled={selectedTransactions.length === 0 || isGeneratingReport}
-          >
-            <Download className="mr-2 h-5 w-5" />
-            Download Report
-          </Button>
-        </div>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center gap-2">
+        <Printer className="h-6 w-6 text-restaurant-green" />
+        <h1 className="text-2xl font-bold">Transactions</h1>
       </div>
-    </AdminLayout>
+      
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="border-restaurant-green/10 shadow-md bg-restaurant-light-green/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-2xl">₹{transactions.reduce((sum, t) => sum + (t.total_amount || 0), 0).toLocaleString()}</CardTitle>
+            <CardDescription>Total Sales</CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className="border-restaurant-green/10 shadow-md bg-restaurant-cream/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-2xl">{transactions.length}</CardTitle>
+            <CardDescription>Total Transactions</CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className="border-restaurant-green/10 shadow-md bg-restaurant-orange/10">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-2xl">{formatDate(new Date().toISOString())}</CardTitle>
+            <CardDescription>Current Date</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+      
+      <Card>
+        <CardHeader className="bg-restaurant-light-green/30 border-b">
+          <CardTitle className="text-xl text-restaurant-green">Transaction List</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="rounded-md border-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                  <TableHead className="w-12">
+                    <Checkbox 
+                      checked={transactions.length > 0} 
+                      onCheckedChange={() => {}}
+                    />
+                  </TableHead>
+                  <TableHead className="w-24">Date & Time</TableHead>
+                  <TableHead className="w-32">Items</TableHead>
+                  <TableHead className="w-32 text-right">Amount (₹)</TableHead>
+                  <TableHead>Payment</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center p-8 text-muted-foreground">
+                      No transactions found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  transactions.map((transaction) => (
+                    <TableRow key={transaction._id} className="hover:bg-muted/30">
+                      <TableCell>
+                        <Checkbox 
+                          checked={true} 
+                          onCheckedChange={() => {}}
+                        />
+                      </TableCell>
+                      <TableCell>{formatDate(transaction.timestamp)}</TableCell>
+                      <TableCell>
+                        {transaction.items.map((item) => (
+                          <div key={item.name} className="text-sm">
+                            {item.quantity}x {item.name} (₹{item.price})
+                          </div>
+                        ))}
+                      </TableCell>
+                      <TableCell className="text-right">₹{transaction.total_amount.toFixed(2)}</TableCell>
+                      <TableCell>{transaction.payment_method}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <div className="flex gap-4">
+        <Button 
+          className="bg-restaurant-cream text-restaurant-green border border-restaurant-green hover:bg-restaurant-green hover:text-white"
+          size="lg"
+          onClick={() => {}}
+          disabled={transactions.length === 0}
+        >
+          <Printer className="mr-2 h-5 w-5" />
+          Print
+        </Button>
+        <Button 
+          className="bg-restaurant-green hover:bg-restaurant-green/90"
+          size="lg"
+          onClick={() => {}}
+          disabled={transactions.length === 0}
+        >
+          <Download className="mr-2 h-5 w-5" />
+          Download Report
+        </Button>
+      </div>
+    </div>
   );
 };
 

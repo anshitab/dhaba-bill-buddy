@@ -1,21 +1,39 @@
+import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { toast } from "@/components/ui/sonner";
+import api from '@/services/api';
 
-import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
-
-interface AdminAuthGuardProps {
-  children: React.ReactNode;
-}
-
-const AdminAuthGuard = ({ children }: AdminAuthGuardProps) => {
+const AdminAuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = () => {
-      const adminLoggedIn = localStorage.getItem("adminLoggedIn") === "true";
-      setIsAuthenticated(adminLoggedIn);
-      setIsLoading(false);
+    const checkAuth = async () => {
+      try {
+        const isAdmin = localStorage.getItem('isAdmin');
+        if (!isAdmin) {
+          setIsAuthenticated(false);
+          return;
+        }
+
+        // Verify the token with the backend
+        const response = await api.get('/test');
+
+        if (response.status === 200) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          localStorage.removeItem('isAdmin');
+          toast.error("Session expired. Please log in again.");
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setIsAuthenticated(false);
+        localStorage.removeItem('isAdmin');
+        toast.error("Authentication failed. Please log in again.");
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     checkAuth();
@@ -23,17 +41,14 @@ const AdminAuthGuard = ({ children }: AdminAuthGuardProps) => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 border-4 border-restaurant-green border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-restaurant-green">Loading admin panel...</p>
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-restaurant-green"></div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/admin/login" />;
   }
 
   return <>{children}</>;

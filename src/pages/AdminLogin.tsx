@@ -1,34 +1,70 @@
-
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
-import { useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { Link } from "react-router-dom";
+import { LogIn, Home } from "lucide-react";
+import { adminAPI } from '@/services/api';
 
-const AdminLogin = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+const AdminLogin: React.FC = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    // Mock login logic - in a real app, this would validate against a secure backend
-    setTimeout(() => {
-      if (email === "admin@arkay.com" && password === "admin123") {
-        toast.success("Login successful!");
-        localStorage.setItem("adminLoggedIn", "true");
-        navigate("/admin");
-      } else {
-        toast.error("Invalid credentials. Please try again.");
+    setLoading(true);
+    setError(null);
+
+    try {
+      const loginData = {
+        username: username,
+        password: password
+      };
+
+      const response = await fetch("http://localhost:5000/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(loginData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Login failed");
       }
-      setIsLoading(false);
-    }, 800);
+
+      const data = await response.json();
+      localStorage.setItem("isAdmin", "true");
+      toast.success("Login successful");
+      navigate("/admin");
+    } catch (error) {
+      console.error("Login error:", error);
+      setError(error instanceof Error ? error.message : "Login failed");
+      toast.error("Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Test server connection on component mount
+  useEffect(() => {
+    const testServer = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/test");
+        const data = await response.json();
+        console.log("Server test response:", data);
+      } catch (err) {
+        console.error("Server test failed:", err);
+      }
+    };
+    testServer();
+  }, []);
 
   return (
     <div className="min-h-screen bg-restaurant-light-green/20 flex items-center justify-center p-4">
@@ -41,15 +77,16 @@ const AdminLogin = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            <form onSubmit={handleLogin} className="space-y-4">
+            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">Email Address</label>
+                <label htmlFor="username" className="text-sm font-medium">Username</label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  type="text"
+                  placeholder="Enter username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                   className="h-12"
                   autoComplete="username"
@@ -61,7 +98,7 @@ const AdminLogin = () => {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -70,29 +107,30 @@ const AdminLogin = () => {
                 />
               </div>
               
-              <Button 
+              <Button
                 type="submit" 
                 className="w-full h-12 bg-restaurant-green hover:bg-restaurant-green/90 transition-all"
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    Logging in...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <LogIn className="h-5 w-5" />
-                    Log In to Admin Panel
-                  </span>
-                )}
+                <span className="flex items-center gap-2">
+                  <LogIn className="h-5 w-5" />
+                  {loading ? "Logging in..." : "Log In to Admin Panel"}
+                </span>
               </Button>
-              
-              <div className="text-sm text-center text-muted-foreground mt-4">
-                <p>Demo Credentials:</p>
-                <p>Email: admin@arkay.com | Password: admin123</p>
-              </div>
             </form>
+
+            <div className="mt-6">
+              <Button
+                variant="outline"
+                className="w-full h-12 border-restaurant-green text-restaurant-green hover:bg-restaurant-green hover:text-white transition-all"
+                asChild
+              >
+                <Link to="/" className="flex items-center gap-2">
+                  <Home className="h-5 w-5" />
+                  Return to Homepage
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
