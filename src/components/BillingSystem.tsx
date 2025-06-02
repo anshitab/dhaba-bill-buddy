@@ -18,6 +18,8 @@ const BillingSystem: React.FC<BillingSystemProps> = ({ menuItems }) => {
   const [isEstimateModalOpen, setIsEstimateModalOpen] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentTransactionId, setCurrentTransactionId] = useState<string | null>(null);
+  const [currentTransaction, setCurrentTransaction] = useState<any>(null);
   const itemEntryFormRef = useRef<{ resetForm: () => void } | null>(null);
 
   const handleAddItem = (newItem: OrderItem) => {
@@ -64,7 +66,6 @@ const BillingSystem: React.FC<BillingSystemProps> = ({ menuItems }) => {
         })),
         total_amount: totalAmount,
         payment_method: "Cash", // Default payment method
-        bill_number: `BILL${Date.now()}`, // Generate a unique bill number
         status: "completed",
         timestamp: new Date().toISOString()
       };
@@ -74,16 +75,19 @@ const BillingSystem: React.FC<BillingSystemProps> = ({ menuItems }) => {
       // Save to MongoDB using our API service
       const response = await api.post('/transactions', transactionData);
       
-      if (response.data && response.data.success) {
+      if (response.data && response.data.transaction) {
         console.log("Transaction saved successfully:", response.data);
-        return true;
+        // Store the transaction ID and data for the bill
+        const transactionId = response.data.transaction.transaction_id;
+        setCurrentTransaction(response.data.transaction);
+        return { success: true, transactionId };
       } else {
         throw new Error(response.data?.message || "Failed to save transaction");
       }
     } catch (error) {
       console.error("Error saving transaction:", error);
       toast.error(error instanceof Error ? error.message : "Failed to save transaction");
-      return false;
+      return { success: false };
     } finally {
       setIsSaving(false);
     }
@@ -91,9 +95,10 @@ const BillingSystem: React.FC<BillingSystemProps> = ({ menuItems }) => {
 
   const handleGenerateEstimate = async () => {
     // Save transaction first
-    const saved = await saveTransaction();
+    const result = await saveTransaction();
     
-    if (saved) {
+    if (result.success) {
+      setCurrentTransactionId(result.transactionId);
       setIsEstimateModalOpen(true);
       
       // Show success animation
@@ -102,7 +107,7 @@ const BillingSystem: React.FC<BillingSystemProps> = ({ menuItems }) => {
       
       // Show toast notification
       toast.success("Transaction saved and estimate generated!", {
-        description: "Ready for the next customer",
+        description: `Transaction ID: ${result.transactionId}`,
         icon: <Check className="h-4 w-4" />
       });
       
@@ -163,8 +168,14 @@ const BillingSystem: React.FC<BillingSystemProps> = ({ menuItems }) => {
 
         <EstimateModal 
           isOpen={isEstimateModalOpen} 
-          onClose={() => setIsEstimateModalOpen(false)}
-          items={orderItems}
+          onClose={() => {
+            setIsEstimateModalOpen(false);
+            setCurrentTransactionId(null);
+            setCurrentTransaction(null);
+          }}
+          items={currentTransaction?.items || orderItems}
+          transactionId={currentTransactionId || undefined}
+          transaction={currentTransaction}
         />
       </div>
     </div>

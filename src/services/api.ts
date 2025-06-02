@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5001';  // Use the actual backend URL
+const API_BASE_URL = 'http://localhost:5000';  // Updated to match Flask server port
 
 const api = axios.create({
   baseURL: API_BASE_URL,

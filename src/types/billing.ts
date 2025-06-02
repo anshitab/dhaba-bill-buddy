@@ -1,10 +1,11 @@
 export interface MenuItem {
-  id: string;
+  id?: string;
+  item_id?: string;
   name: string;
   price: number;
-  category: string;
+  category?: string;
   description?: string;
-  isAvailable: boolean;
+  isAvailable?: boolean;
 }
 
 export interface OrderItem {

@@ -14,38 +14,25 @@ menu_collection = db['menu_items']
 sample_menu_items = [
     {
         "id": "C001",
-        "name": "Butter Chicken",
-        "price": 250,
-        "category": "Main Course",
-        "description": "Tender chicken in a rich, creamy tomato-based curry"
-    },
-    {
-        "id": "C002",
         "name": "Paneer Butter Masala",
         "price": 220,
-        "category": "Main Course",
-        "description": "Cottage cheese in a rich, creamy tomato-based curry"
     },
     {
         "id": "C003",
         "name": "Veg Biryani",
         "price": 180,
-        "category": "Rice",
-        "description": "Fragrant basmati rice cooked with mixed vegetables and spices"
     },
     {
         "id": "C004",
         "name": "Naan",
         "price": 30,
-        "category": "Bread",
-        "description": "Soft, fluffy flatbread baked in tandoor"
+       
     },
     {
         "id": "C005",
         "name": "Lassi",
         "price": 60,
-        "category": "Beverages",
-        "description": "Sweet yogurt drink"
+        
     }
 ]
 

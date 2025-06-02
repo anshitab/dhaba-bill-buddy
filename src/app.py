@@ -211,7 +211,12 @@ def handle_transactions():
             data = request.json
             logger.info(f"Received transaction data: {data}")
             
-            data['timestamp'] = datetime.now()
+            # Generate a visible transaction ID
+            timestamp = datetime.now()
+            transaction_id = f"TXN{timestamp.strftime('%Y%m%d%H%M%S')}"
+            data['transaction_id'] = transaction_id
+            data['timestamp'] = timestamp
+            
             result = transactions_collection.insert_one(data)
             logger.info("Transaction saved to MongoDB successfully")
             
@@ -347,18 +352,8 @@ def is_port_in_use(port):
         return s.connect_ex(('127.0.0.1', port)) == 0
 
 if __name__ == "__main__":
-    # Find an available port
-    port = 5000
-    while port < 5010:  # Try ports from 5000 to 5009
-        try:
-            if is_port_in_use(port):
-                logger.warning(f"Port {port} is in use, trying next port...")
-                port += 1
-                continue
-                
-            logger.info(f"Starting Flask server on port {port}")
-            app.run(debug=True, port=port)
-            break
-        except Exception as e:
-            logger.error(f"Failed to start server: {str(e)}")
-            port += 1
+    try:
+        logger.info("Starting Flask server on port 5000")
+        app.run(debug=True, port=5000, host='127.0.0.1')
+    except Exception as e:
+        logger.error(f"Failed to start server: {str(e)}")

@@ -35,7 +35,15 @@ const ItemEntryForm = forwardRef<{ resetForm: () => void }, ItemEntryFormProps>(
 
   // Find item when itemId changes
   useEffect(() => {
-    const foundItem = menuItems.find(item => item.id.toLowerCase() === itemId.toLowerCase());
+    if (!itemId) {
+      setSelectedItem(null);
+      return;
+    }
+    
+    const foundItem = menuItems.find(item => 
+      (item.item_id?.toLowerCase() === itemId.toLowerCase()) || 
+      (item.id?.toLowerCase() === itemId.toLowerCase())
+    );
     setSelectedItem(foundItem || null);
     if (foundItem) {
       setItemName(foundItem.name);

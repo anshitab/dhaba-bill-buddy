@@ -15,15 +15,56 @@ interface EstimateModalProps {
   isOpen: boolean;
   onClose: () => void;
   items: OrderItem[];
+  transactionId?: string;
+  transaction?: any;
 }
 
 const EstimateModal = forwardRef<HTMLDivElement, EstimateModalProps>(
-  ({ isOpen, onClose, items }, ref) => {
+  ({ isOpen, onClose, items, transactionId, transaction }, ref) => {
     const estimateRef = useRef<HTMLDivElement>(null);
 
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-    const currentDate = new Date().toLocaleDateString('en-IN');
-    const currentTime = new Date().toLocaleTimeString('en-IN');
+    const totalAmount = transaction?.total_amount || items.reduce((sum, item) => sum + item.total, 0);
+    
+    // Format date and time from transaction timestamp
+    const formatDateTime = (timestamp: string) => {
+      try {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid date');
+        }
+        return {
+          date: date.toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }),
+          time: date.toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          })
+        };
+      } catch (error) {
+        // Fallback to current date/time if timestamp is invalid
+        const now = new Date();
+        return {
+          date: now.toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }),
+          time: now.toLocaleTimeString('en-IN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          })
+        };
+      }
+    };
+
+    const { date: currentDate, time: currentTime } = transaction?.timestamp 
+      ? formatDateTime(transaction.timestamp)
+      : formatDateTime(new Date().toISOString());
 
     const handlePrint = () => {
       const content = estimateRef.current;
@@ -63,6 +104,13 @@ const EstimateModal = forwardRef<HTMLDivElement, EstimateModalProps>(
               text-align: center;
               margin: 5px 0;
               font-size: 11px;
+            }
+            .transaction-id {
+              text-align: center;
+              margin: 5px 0;
+              font-size: 11px;
+              font-weight: bold;
+              color: #22c55e;
             }
             table { 
               width: 100%;
@@ -129,9 +177,10 @@ const EstimateModal = forwardRef<HTMLDivElement, EstimateModalProps>(
 AARKAY VAISHNO DHABA
 JALANDHAR, PUNJAB
 Date: ${currentDate} Time: ${currentTime}
+${transactionId ? `Transaction ID: ${transactionId}` : ''}
 
 ITEMS:
-${items.map(item => `${item.name} - ${item.quantity} x ₹${item.price} = ₹${item.total}`).join('\n')}
+${items.map((item, i) => `${i + 1}. ${item.name} - ${item.quantity} x ₹${item.price} = ₹${item.total}`).join('\n')}
 
 Total Amount: ₹${totalAmount.toFixed(2)}
 
@@ -156,6 +205,9 @@ Thank you for dining with us!
             <h1 className="text-xl font-bold mb-1 font-poppins">AARKAY VAISHNO DHABA</h1>
             <div className="text-center text-muted-foreground mb-4 font-poppins">
               <p>Date: {currentDate} | Time: {currentTime}</p>
+              {transactionId && (
+                <p className="text-restaurant-green font-semibold">Transaction ID: {transactionId}</p>
+              )}
             </div>
 
             <Separator className="my-2" />
@@ -164,19 +216,21 @@ Thank you for dining with us!
               <table className="w-full">
                 <thead className="border-b">
                   <tr className="font-poppins">
-                    <th className="text-left font-medium">Item</th>
-                    <th className="text-center font-medium">Price</th>
-                    <th className="text-center font-medium">Qty</th>
-                    <th className="text-right font-medium">Total</th>
+                    <th className="text-left font-medium">Sr. No.</th>
+                    <th className="text-left font-medium">Item Name</th>
+                    <th className="text-center font-medium">Quantity</th>
+                    <th className="text-center font-medium">Price (₹)</th>
+                    <th className="text-right font-medium">Total (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((item, i) => (
                     <tr key={i} className="font-poppins">
+                      <td className="py-2 text-left">{i + 1}</td>
                       <td className="py-2 text-left">{item.name}</td>
-                      <td className="py-2 text-center">₹{item.price}</td>
                       <td className="py-2 text-center">{item.quantity}</td>
-                      <td className="py-2 text-right">₹{item.total}</td>
+                      <td className="py-2 text-center">{item.price}</td>
+                      <td className="py-2 text-right">{item.total}</td>
                     </tr>
                   ))}
                 </tbody>
